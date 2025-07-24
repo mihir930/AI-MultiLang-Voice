@@ -16,6 +16,7 @@ SHEET_NAME = "TTS_Sheet"  # Replace with your sheet name
 WORKSHEET_INDEX = 0
 sheet = client_gsheets.open(SHEET_NAME).get_worksheet(WORKSHEET_INDEX)
 
+# --- this is a change ---
 # --- Step 3: Read English dialogues ---
 english_texts = sheet.col_values(1)[1:]  # Skip header
 
