@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Translation Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .header {
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+            line-height: 1.6;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 40px 20px;
+            margin: 30px 0;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: #f8f9ff;
+        }
+
+        .upload-area:hover {
+            border-color: #764ba2;
+            background: #f0f2ff;
+            transform: translateY(-2px);
+        }
+
+        .upload-area.dragover {
+            border-color: #764ba2;
+            background: #e8ebff;
+            transform: scale(1.02);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .upload-text {
+            font-size: 1.2rem;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .upload-subtext {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .progress-container {
+            display: none;
+            margin: 20px 0;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .file-info {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            display: none;
+        }
+
+        .features {
+            margin-top: 30px;
+            text-align: left;
+        }
+
+        .features h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .features ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .features li {
+            padding: 8px 0;
+            color: #666;
+            position: relative;
+            padding-left: 25px;
+        }
+
+        .features li:before {
+            content: "✓";
+            color: #667eea;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading {
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .options-section {
+            margin: 30px 0;
+            padding: 25px;
+            background: #f8f9ff;
+            border-radius: 15px;
+            border: 2px solid #e8ebff;
+        }
+
+        .options-section h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+        }
+
+        .option-group {
+            margin-bottom: 20px;
+        }
+
+        .option-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .option-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            background: white;
+            transition: all 0.3s ease;
+        }
+
+        .option-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .option-group small {
+            display: block;
+            margin-top: 5px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .checkbox-label {
+            display: flex !important;
+            align-items: center;
+            cursor: pointer;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            margin-right: 10px;
+            transform: scale(1.2);
+        }
+
+        .audio-section {
+            margin-top: 20px;
+            padding: 20px;
+            background: #e8f5e8;
+            border-radius: 10px;
+            border: 2px solid #c3e6cb;
+        }
+
+        .audio-files {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .audio-file {
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+
+        .audio-file a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .audio-file a:hover {
+            color: #764ba2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>AI MultiLang Voice</h1>
+            <p>An AI tool that converts English text to multiple indian regional languages and generates high-quality mp3 audio</p>
+            <!-- <p>Upload your Excel or CSV file to translate English text to Hindi automatically</p> -->
+        </div>
+
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📁</div>
+            <div class="upload-text">Click to select file or drag & drop</div>
+            <div class="upload-subtext">Supports .xlsx, .xls, and .csv files</div>
+            <input type="file" id="fileInput" accept=".xlsx,.xls,.csv">
+        </div>
+
+        <div class="options-section">
+            <h3>🔧 Processing Options</h3>
+            
+            <div class="option-group">
+                <label for="targetLanguage">🌐 Target Language:</label>
+                <select id="targetLanguage" name="target_language">
+                    <option value="od-IN">Odia (ଓଡ଼ିଆ)</option>
+                    <option value="hi-IN">Hindi (हिन्दी)</option>
+                    <option value="bn-IN">Bengali (বাংলা)</option>
+                    <option value="te-IN">Telugu (తెలుగు)</option>
+                    <option value="ta-IN">Tamil (தமிழ்)</option>
+                    <option value="gu-IN">Gujarati (ગુજરાતી)</option>
+                    <option value="kn-IN">Kannada (ಕನ್ನಡ)</option>
+                    <option value="ml-IN">Malayalam (മലയാളം)</option>
+                    <option value="pa-IN">Punjabi (ਪੰਜਾਬੀ)</option>
+                    <option value="mr-IN">Marathi (मराठी)</option>
+                </select>
+            </div>
+
+            <div class="option-group">
+                <label for="speaker">🎤 Speaker Voice:</label>
+                <select id="speaker" name="speaker">
+                    <option value="anushka">Anushka (Female)</option>
+                    <option value="male">Male Voice</option>
+                </select>
+            </div>
+
+            <div class="option-group">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="generateAudio" name="generate_audio">
+                    <span class="checkmark"></span>
+                    🔊 Generate Audio Files
+                </label>
+                <small>Create audio files for each translated text</small>
+            </div>
+        </div>
+
+        <div class="file-info" id="fileInfo">
+            <strong>Selected file:</strong> <span id="fileName"></span><br>
+            <strong>Size:</strong> <span id="fileSize"></span>
+        </div>
+
+        <div class="progress-container" id="progressContainer">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div id="progressText">Processing...</div>
+        </div>
+
+        <div class="status" id="status"></div>
+
+        <button class="btn" id="uploadBtn" onclick="uploadFile()" disabled>
+            <span class="spinner" id="spinner"></span>
+            <span id="btnText">Upload & Translate</span>
+        </button>
+
+        <div class="features">
+            <h3>✨ Features</h3>
+            <ul>
+                <li>Automatic translation from English to any target language</li>
+                <li>Supports Excel (.xlsx, .xls) and CSV files</li>
+                <li>Preserves original file structure</li>
+                <li>Fast and accurate translations</li>
+                <li>Download translated file instantly</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const status = document.getElementById('status');
+        const spinner = document.getElementById('spinner');
+        const btnText = document.getElementById('btnText');
+
+        let selectedFile = null;
+
+        // File upload area click
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        // File input change
+        fileInput.addEventListener('change', handleFileSelect);
+
+        // Drag and drop
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                handleFileSelect();
+            }
+        });
+
+        function handleFileSelect() {
+            const file = fileInput.files[0];
+            if (file) {
+                selectedFile = file;
+                fileName.textContent = file.name;
+                fileSize.textContent = formatFileSize(file.size);
+                fileInfo.style.display = 'block';
+                uploadBtn.disabled = false;
+                hideStatus();
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function showStatus(message, type) {
+            // Clear any existing content
+            status.innerHTML = '';
+            status.innerHTML = message;
+            status.className = `status ${type}`;
+            status.style.display = 'block';
+        }
+
+        function hideStatus() {
+            status.style.display = 'none';
+        }
+
+        function showProgress() {
+            progressContainer.style.display = 'block';
+            uploadBtn.disabled = true;
+            spinner.style.display = 'inline-block';
+            btnText.textContent = 'Processing...';
+        }
+
+        function hideProgress() {
+            progressContainer.style.display = 'none';
+            uploadBtn.disabled = false;
+            spinner.style.display = 'none';
+            btnText.textContent = 'Upload & Translate';
+        }
+
+        function updateProgress(percent) {
+            progressFill.style.width = percent + '%';
+            progressText.textContent = `Processing... ${Math.round(percent)}%`;
+        }
+
+        async function uploadFile() {
+            if (!selectedFile) {
+                showStatus('Please select a file first', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            
+            // Add processing options
+            formData.append('target_language', document.getElementById('targetLanguage').value);
+            formData.append('speaker', document.getElementById('speaker').value);
+            formData.append('generate_audio', document.getElementById('generateAudio').checked);
+
+            showProgress();
+            hideStatus();
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                hideProgress();
+
+                if (result.success) {
+                    let message = `✅ Translation completed! Translated ${result.translated_count} out of ${result.total_rows} rows.`;
+                    
+                    if (result.audio_generated) {
+                        message += `\n🔊 Generated ${result.audio_count} audio files.`;
+                    }
+                    
+                    showStatus(message, 'success');
+                    
+                    // Create download button for translated file
+                    const downloadBtn = document.createElement('a');
+                    downloadBtn.href = result.download_url;
+                    downloadBtn.className = 'btn';
+                    downloadBtn.textContent = '📥 Download Translated File';
+                    downloadBtn.style.marginTop = '15px';
+                    downloadBtn.style.display = 'inline-block';
+                    downloadBtn.style.textDecoration = 'none';
+                    downloadBtn.download = 'translated_file.xlsx';
+                    
+                    // Add download button to status
+                    const br = document.createElement('br');
+                    status.appendChild(br);
+                    status.appendChild(downloadBtn);
+                    
+                    // Add audio download section if audio was generated
+                    if (result.audio_generated && result.audio_session) {
+                        addAudioDownloadSection(result.audio_session);
+                    }
+                } else {
+                    showStatus(`❌ Error: ${result.error}`, 'error');
+                }
+            } catch (error) {
+                hideProgress();
+                showStatus(`❌ Network error: ${error.message}`, 'error');
+            }
+        }
+
+        function addAudioDownloadSection(sessionId) {
+            // Create audio section
+            const audioSection = document.createElement('div');
+            audioSection.className = 'audio-section';
+            audioSection.innerHTML = `
+                <h4>🔊 Audio Files Generated</h4>
+                <p>Download individual audio files or all files as a zip:</p>
+                <div class="audio-files" id="audioFiles">
+                    <div class="audio-file">
+                        <a href="/download_all_audio/${sessionId}" download>📦 Download All Audio (ZIP)</a>
+                    </div>
+                </div>
+            `;
+            
+            status.appendChild(document.createElement('br'));
+            status.appendChild(audioSection);
+            
+            // Load individual audio files
+            loadAudioFiles(sessionId);
+        }
+
+        async function loadAudioFiles(sessionId) {
+            try {
+                const response = await fetch(`/list_audio/${sessionId}`);
+                const result = await response.json();
+                
+                if (result.audio_files) {
+                    const audioFilesContainer = document.getElementById('audioFiles');
+                    
+                    result.audio_files.forEach(audioFile => {
+                        const audioFileDiv = document.createElement('div');
+                        audioFileDiv.className = 'audio-file';
+                        audioFileDiv.innerHTML = `
+                            <a href="${audioFile.download_url}" download>🎵 Row ${audioFile.row_number}</a>
+                        `;
+                        audioFilesContainer.appendChild(audioFileDiv);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading audio files:', error);
+            }
+        }
+
+        // Simulate progress for better UX
+        function simulateProgress() {
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress > 90) {
+                    progress = 90;
+                    clearInterval(interval);
+                }
+                updateProgress(progress);
+            }, 200);
+            return interval;
+        }
+    </script>
+</body>
+</html>
