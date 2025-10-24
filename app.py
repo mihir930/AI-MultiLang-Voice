@@ -9,21 +9,39 @@ import zipfile
 import wave
 import numpy as np
 from datetime import datetime
+import logging
 
 app = Flask(__name__)
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Get environment variables
+PORT = os.environ.get('PORT', 8000)
+SARVAM_API_KEY = os.environ.get('SARVAM_API_KEY', 'sk_li69ptgl_pZ0qdiBl1G7OYSTsskigWibF')
+
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['OUTPUT_FOLDER'] = 'outputs'
 app.config['AUDIO_FOLDER'] = 'audio_outputs'
 
 # Create necessary directories
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
-os.makedirs(app.config['AUDIO_FOLDER'], exist_ok=True)
+try:
+    os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+    os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
+    os.makedirs(app.config['AUDIO_FOLDER'], exist_ok=True)
+    logger.info("Directories created successfully")
+except Exception as e:
+    logger.error(f"Error creating directories: {e}")
 
 # Sarvam API configuration
-SARVAM_API_KEY = "sk_li69ptgl_pZ0qdiBl1G7OYSTsskigWibF"
-sarvam_client = SarvamAI(api_subscription_key=SARVAM_API_KEY)
+try:
+    sarvam_client = SarvamAI(api_subscription_key=SARVAM_API_KEY)
+    logger.info("Sarvam client initialized successfully")
+except Exception as e:
+    logger.error(f"Error initializing Sarvam client: {e}")
+    sarvam_client = None
 
 ALLOWED_EXTENSIONS = {'xlsx', 'xls', 'csv'}
 
@@ -50,6 +68,9 @@ def generate_audio_from_text(text, row_number, session_folder, language_code="od
     """Generate audio from text using Sarvam TTS"""
     try:
         print(f"🔊 Generating audio for Row {row_number}: {text}")
+        
+        if sarvam_client is None:
+            raise Exception("Sarvam client not initialized")
         
         response = sarvam_client.text_to_speech.convert(
             text=text,
@@ -150,6 +171,9 @@ def process_file(filepath, generate_audio=False, target_language="od-IN", speake
         for i, text in enumerate(english_texts):
             try:
                 print(f"🔄 Translating Row {i + 1}: {text}")
+                
+                if sarvam_client is None:
+                    raise Exception("Sarvam client not initialized")
                 
                 response = sarvam_client.text.translate(
                     input=str(text),
@@ -329,4 +353,8 @@ def health_check():
     return jsonify({'status': 'healthy'})
 
 if __name__ == '__main__':
+    # For local development
     app.run(debug=True, host='127.0.0.1', port=8000)
+else:
+    # For production deployment
+    logger.info(f"Starting app on port {PORT}")

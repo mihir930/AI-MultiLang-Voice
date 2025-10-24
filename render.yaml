@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: translation-app
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.18
+      - key: SARVAM_API_KEY
+        value: sk_li69ptgl_pZ0qdiBl1G7OYSTsskigWibF
