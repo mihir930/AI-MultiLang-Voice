@@ -24,12 +24,12 @@ A web application that translates English text from Excel/CSV files to Hindi usi
 
 2. **Run the Application**
    ```bash
-   python app.py
+   python run.py
    ```
 
 3. **Open in Browser**
    ```
-   http://localhost:8080
+   http://localhost:8000
    ```
 
 ### Docker Deployment
