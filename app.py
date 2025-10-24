@@ -2,14 +2,23 @@ import os
 import pandas as pd
 from flask import Flask, request, jsonify, render_template, send_file
 from werkzeug.utils import secure_filename
-from sarvamai import SarvamAI
-from sarvamai.play import save
 import tempfile
 import zipfile
 import wave
 import numpy as np
 from datetime import datetime
 import logging
+
+# Try to import SarvamAI with fallback
+try:
+    from sarvamai import SarvamAI
+    from sarvamai.play import save
+    SARVAM_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: SarvamAI not available: {e}")
+    SARVAM_AVAILABLE = False
+    SarvamAI = None
+    save = None
 
 app = Flask(__name__)
 
@@ -36,11 +45,15 @@ except Exception as e:
     logger.error(f"Error creating directories: {e}")
 
 # Sarvam API configuration
-try:
-    sarvam_client = SarvamAI(api_subscription_key=SARVAM_API_KEY)
-    logger.info("Sarvam client initialized successfully")
-except Exception as e:
-    logger.error(f"Error initializing Sarvam client: {e}")
+if SARVAM_AVAILABLE:
+    try:
+        sarvam_client = SarvamAI(api_subscription_key=SARVAM_API_KEY)
+        logger.info("Sarvam client initialized successfully")
+    except Exception as e:
+        logger.error(f"Error initializing Sarvam client: {e}")
+        sarvam_client = None
+else:
+    logger.warning("SarvamAI not available - running in limited mode")
     sarvam_client = None
 
 ALLOWED_EXTENSIONS = {'xlsx', 'xls', 'csv'}
@@ -69,8 +82,8 @@ def generate_audio_from_text(text, row_number, session_folder, language_code="od
     try:
         print(f"🔊 Generating audio for Row {row_number}: {text}")
         
-        if sarvam_client is None:
-            raise Exception("Sarvam client not initialized")
+        if not SARVAM_AVAILABLE or sarvam_client is None:
+            raise Exception("Sarvam client not available")
         
         response = sarvam_client.text_to_speech.convert(
             text=text,
@@ -85,9 +98,12 @@ def generate_audio_from_text(text, row_number, session_folder, language_code="od
         temp_path = os.path.join(session_folder, f"row_{row_number}_raw.wav")
         final_path = os.path.join(session_folder, f"row_{row_number}.wav")
 
-        save(response, temp_path)
-        prepend_silence(temp_path, final_path)
-        os.remove(temp_path)
+        if save is not None:
+            save(response, temp_path)
+            prepend_silence(temp_path, final_path)
+            os.remove(temp_path)
+        else:
+            raise Exception("Save function not available")
         
         return final_path
         
@@ -98,6 +114,15 @@ def generate_audio_from_text(text, row_number, session_folder, language_code="od
 @app.route('/')
 def index():
     return render_template('index.html')
+
+@app.route('/status')
+def status():
+    """Check if SarvamAI is available"""
+    return jsonify({
+        'sarvam_available': SARVAM_AVAILABLE,
+        'sarvam_client_initialized': sarvam_client is not None,
+        'status': 'healthy' if SARVAM_AVAILABLE else 'limited_mode'
+    })
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -172,8 +197,8 @@ def process_file(filepath, generate_audio=False, target_language="od-IN", speake
             try:
                 print(f"🔄 Translating Row {i + 1}: {text}")
                 
-                if sarvam_client is None:
-                    raise Exception("Sarvam client not initialized")
+                if not SARVAM_AVAILABLE or sarvam_client is None:
+                    raise Exception("Sarvam client not available")
                 
                 response = sarvam_client.text.translate(
                     input=str(text),
